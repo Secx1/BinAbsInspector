@@ -41,6 +41,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -302,6 +303,74 @@ public class Utils {
 
 
     /**
+     * Returns the file name of the z3 JNI library expected on the current platform.
+     * @return the platform specific library file name.
+     */
+    static String getExpectedZ3LibraryFileName() {
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (os.contains("win")) {
+            return "libz3java.dll (alongside libz3.dll)";
+        }
+        if (os.contains("mac") || os.contains("darwin")) {
+            return "libz3java.dylib (alongside libz3.dylib)";
+        }
+        return "libz3java.so (alongside libz3.so)";
+    }
+
+    /**
+     * Returns the environment variable the dynamic linker searches for the z3 library on the
+     * current platform.
+     * @return the name of the relevant search path environment variable.
+     */
+    static String getNativeSearchPathVariable() {
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (os.contains("win")) {
+            return "PATH";
+        }
+        if (os.contains("mac") || os.contains("darwin")) {
+            return "DYLD_LIBRARY_PATH";
+        }
+        return "LD_LIBRARY_PATH";
+    }
+
+    /**
+     * Builds an actionable diagnostic for a failure to load the z3 native library.
+     *
+     * <p>The bare "cannot detect z3" message left users unable to tell a missing library from a
+     * version mismatch or a library installed in a directory the linker never searches, so this
+     * reports the underlying linker error, the file that was looked for, and every directory that
+     * was actually searched.
+     *
+     * @param error the linkage error raised while loading z3.
+     * @return the message to log.
+     */
+    // Package private so the diagnostic can be asserted in unit tests.
+    static String describeZ3LoadFailure(Throwable error) {
+        String searchPathVariable = getNativeSearchPathVariable();
+        String searchPath = System.getenv(searchPathVariable);
+        StringBuilder message = new StringBuilder();
+        message.append("Cannot detect z3 solver library, please check your z3 solver installation ")
+                .append("or disable z3 solver in configuration.")
+                .append(System.lineSeparator())
+                .append("  Cause: ").append(error.getClass().getName())
+                .append(": ").append(error.getMessage())
+                .append(System.lineSeparator())
+                .append("  Looking for: ").append(getExpectedZ3LibraryFileName())
+                .append(System.lineSeparator())
+                .append("  java.library.path = ")
+                .append(System.getProperty("java.library.path", "<unset>"))
+                .append(System.lineSeparator())
+                .append("  ").append(searchPathVariable).append(" = ")
+                .append(searchPath == null ? "<unset>" : searchPath)
+                .append(System.lineSeparator())
+                .append("  Note: the native library must sit in a directory on the search path ")
+                .append("above (on Linux that is a library directory such as /usr/local/lib, not ")
+                .append("/usr/local/bin), and its version must match the z3 Java bindings in ")
+                .append("lib/com.microsoft.z3.jar.");
+        return message.toString();
+    }
+
+    /**
      * Checks whether z3 solver is installed properly on this machine.
      * @return true if z3 solver works fine, false otherwise.
      */
@@ -310,10 +379,11 @@ public class Utils {
             com.microsoft.z3.Context z3Context = new com.microsoft.z3.Context();
             z3Context.close();
             return true;
-        } catch (UnsatisfiedLinkError e) {
-            Logging.error(
-                    "Cannot detect z3 solver library, please check your z3 solver installation "
-                            + "or disable z3 solver in configuration.");
+        } catch (UnsatisfiedLinkError | NoClassDefFoundError e) {
+            // NoClassDefFoundError shows up when the z3 class was already initialised once and its
+            // static loader failed then: the second attempt no longer raises UnsatisfiedLinkError,
+            // which the previous catch clause missed entirely.
+            Logging.error(describeZ3LoadFailure(e));
             return false;
         }
     }
