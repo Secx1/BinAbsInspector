@@ -29,6 +29,24 @@ licence is unchanged.
   `UnsatisfiedLinkError`, which propagated out of the check instead of being reported. Both are
   handled now.
 
+- **Fixed the documented `docker run` command not finding the binary**
+  (upstream [#83](https://github.com/KeenSecurityLab/BinAbsInspector/issues/83)).
+
+  The README tells you to mount your working directory at `/data/workspace`, but the image left
+  its working directory at `/data/workspace/BinAbsInspector` from the build stage, so a relative
+  `-import` path resolved to `/data/workspace/BinAbsInspector/<file>` while the file was at
+  `/data/workspace/<file>`. Ghidra then reported it as not a valid file, with nothing to suggest
+  a path problem. The image now returns to `/data/workspace` after the build, and the README
+  states where the binary has to live.
+
+  The entrypoint also passed `~` as the Ghidra project path. In exec form there is no shell to
+  expand it, so Ghidra created a directory literally named `~` inside the user's mounted
+  directory. The project now goes to `/tmp/ghidra-project`.
+
+  *Not verified by running the container:* Docker was not available on the machine this was
+  fixed on. The cause is read off the Dockerfile and the README, and anyone with Docker should
+  confirm before relying on it.
+
 ### Documentation
 
 - **Added a Ghidra/JDK compatibility table to the README**
@@ -50,3 +68,8 @@ licence is unchanged.
 
 `gradle buildExtension` and `gradle test` pass against Ghidra 10.4 with JDK 17.0.20.1 and
 Gradle 7.4 on Windows, producing `dist/ghidra_10.4_PUBLIC_<date>_BinAbsInspector.zip`.
+
+- **Added a FAQ** covering the three questions the tracker keeps receiving: whether IDA can
+  replace Ghidra (no, and why, with the coupling quantified, upstream
+  [#84](https://github.com/KeenSecurityLab/BinAbsInspector/issues/84)), the JDK mismatch behind
+  "Unable to locate script class", and what to check when z3 fails to load.
