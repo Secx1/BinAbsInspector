@@ -1,6 +1,36 @@
+> **This is a community-maintained fork.**
+>
+> The original [KeenSecurityLab/BinAbsInspector](https://github.com/KeenSecurityLab/BinAbsInspector)
+> has had no commits since May 2024 and its issue tracker is unattended. This fork exists to keep
+> the project building and to work through the open reports. All credit for the design and
+> implementation belongs to Keenlab; the project stays under the same GPL-3.0 licence, reproduced
+> unchanged in [LICENSE](./LICENSE).
+>
+> Maintainer of this fork: secx — not affiliated with Keenlab or Tencent.
+>
+> Changes made here are listed in [FORK_CHANGELOG.md](./FORK_CHANGELOG.md).
+
 # What is  BinAbsInspector?
 
 BinAbsInspector (Binary Abstract Inspector) is a static analyzer for automated reverse engineering and scanning vulnerabilities in binaries, which is a long-term research project incubated at [Keenlab](https://keenlab.tencent.com/). It is based on abstract interpretation with the support from Ghidra. It works on Ghidra's Pcode instead of assembly. Currently it supports binaries on x86,x64, armv7 and aarch64. 
+
+# Requirements
+
+Ghidra decides which JDK you need, and a mismatch does not fail loudly: Ghidra reports
+`Unable to locate script class: BinAbsInspector.java` rather than naming the real cause, which is
+what [#82](https://github.com/KeenSecurityLab/BinAbsInspector/issues/82) ran into. Check this
+before anything else.
+
+| Ghidra | JDK | Notes |
+| ------ | --- | ----- |
+| 10.4 | 17 | What CI builds against, and what this fork is verified on |
+| 10.2 - 10.3 | 17 | |
+| 10.0 - 10.1.x | 11 | JDK 17 or 21 here produces the misleading "Unable to locate script class" error |
+
+Also needed to build: Gradle 7.x (7.4 verified) and Z3 4.8.15.
+
+If Ghidra fails to find the extension script, check your JDK version against the table above
+before investigating anything else.
 
 # Installation
 + Install Ghidra according to [Ghidra's documentation](https://github.com/NationalSecurityAgency/ghidra#install)
