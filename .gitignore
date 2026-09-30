@@ -14,3 +14,9 @@ gradle.properties
 .editorconfig
 /src/integration/resources/binaries
 /out/
+
+# buildExtension copies resolved dependencies into lib/ on every build. The three jars
+# that belong to the repository are tracked; these are build output.
+/lib/error_prone_annotations-*.jar
+/lib/jackson-*.jar
+/lib/log4j-*.jar
