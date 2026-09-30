@@ -59,5 +59,14 @@ RUN gradle compileJava --warning-mode all \
 RUN cp dist/*.zip "${GHIDRA_INSTALL_DIR}/Ghidra/Extensions" && \
         cd "${GHIDRA_INSTALL_DIR}/Ghidra/Extensions" && unzip *.zip
 
-# Provide an easy way to run the plugin
-ENTRYPOINT ["analyzeHeadless", "~", "tmp", "-deleteProject", "-overwrite", "-postScript", "BinAbsInspector.java"]
+# Run from the directory the README tells you to mount binaries into. The build above
+# needs /data/workspace/BinAbsInspector, but leaving the working directory there meant a
+# relative -import path resolved to /data/workspace/BinAbsInspector/<file> while the file
+# was actually at /data/workspace/<file>, and Ghidra reported it as not a valid file.
+WORKDIR /data/workspace
+
+# Provide an easy way to run the plugin.
+# The Ghidra project goes to /tmp: the previous "~" was passed through exec form without
+# shell expansion, so Ghidra created a directory literally named "~" inside the mounted
+# host folder.
+ENTRYPOINT ["analyzeHeadless", "/tmp/ghidra-project", "tmp", "-deleteProject", "-overwrite", "-postScript", "BinAbsInspector.java"]

@@ -93,6 +93,42 @@ docker build . -t bai
 docker run -v $(pwd):/data/workspace bai "@@<script parameters>" -import <file>
 ```
 
+The binary you pass to `-import` has to live inside the directory you mount, and the path is
+resolved relative to `/data/workspace`. Pointing at a file outside the mount makes Ghidra
+report it as not a valid file, which is what
+[#83](https://github.com/KeenSecurityLab/BinAbsInspector/issues/83) hit. So from the directory
+holding `target.bin`:
+
+```shell
+docker run -v $(pwd):/data/workspace bai "@@-check CWE78" -import target.bin
+```
+
+# FAQ
+
+### Can IDA be used instead of Ghidra?
+
+No, and not as a configuration switch either. This is an abstract interpreter over Ghidra's
+P-Code, not a tool that happens to read a disassembly: 69 of the 79 source files import
+`ghidra.*`, and the analysis is written against Ghidra's own model of programs, data types,
+addresses and symbols (`ghidra.program.model.pcode`, `.data`, `.listing`, `.address`,
+`.symbol`). It also ships as a Ghidra extension and runs through `analyzeHeadless`.
+
+Retargeting to IDA would mean lifting IDA's microcode into an equivalent IR and reimplementing
+the program model the analysis depends on, which is a rewrite rather than a port. Tracked
+upstream as [#84](https://github.com/KeenSecurityLab/BinAbsInspector/issues/84).
+
+### Ghidra says "Unable to locate script class: BinAbsInspector.java"
+
+Your JDK does not match your Ghidra version. See the compatibility table at the top of this
+README. Ghidra 10.0 - 10.1.x needs JDK 11; JDK 17 or 21 there produces exactly this message.
+
+### "Cannot detect z3 solver library"
+
+The message now prints the underlying linker error, the library file it wanted, and every path
+it searched. Check that the native library sits in a directory on that search path, that it is
+a library directory (`/usr/local/lib`, not `/usr/local/bin`), and that its version matches the
+bindings in `lib/com.microsoft.z3.jar`.
+
 # Implemented Checkers
 So far BinAbsInspector supports following checkers:
 
