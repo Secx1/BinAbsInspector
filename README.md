@@ -6,7 +6,7 @@
 > implementation belongs to Keenlab; the project stays under the same GPL-3.0 licence, reproduced
 > unchanged in [LICENSE](./LICENSE).
 >
-> Maintainer of this fork: secx — not affiliated with Keenlab or Tencent.
+> Maintainer of this fork: 云深 — not affiliated with Keenlab or Tencent.
 >
 > Changes made here are listed in [FORK_CHANGELOG.md](./FORK_CHANGELOG.md).
 
